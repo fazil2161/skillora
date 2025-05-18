@@ -8,11 +8,13 @@ const path = require('path');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://skillora-production.up.railway.app', 'http://localhost:3000'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://skillora.onrender.com', 'https://skillora-api.onrender.com']
+    : 'http://localhost:3000',
   credentials: true,
 }));
 
@@ -86,22 +88,13 @@ app.use('/api/reviews', require('./routes/reviews'));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(__dirname, '../../client/dist');
-  console.log('Static files path:', clientPath);
-  app.use(express.static(clientPath));
+  app.use(express.static(path.join(__dirname, '../../client/dist')));
   
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
-    const indexPath = path.join(clientPath, 'index.html');
-    console.log('Serving index.html from:', indexPath);
-    res.sendFile(indexPath, err => {
-      if (err) {
-        console.error('Error sending index.html:', err);
-        res.status(500).send('Error loading application');
-      }
-    });
+    res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
   });
 }
 
@@ -132,8 +125,8 @@ async function startServer() {
       await adminUser.save();
       console.log('Default admin created successfully');
     }
-
-    app.listen(PORT, '0.0.0.0', () => {
+    
+    app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log('Environment:', process.env.NODE_ENV);
     });
