@@ -42,18 +42,18 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: MONGODB_URI,
-    collectionName: 'sessions', // Custom collection name for sessions
-    ttl: 24 * 60 * 60, // Session TTL (1 day)
-    autoRemove: 'native', // Enable automatic removal of expired sessions
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native',
     crypto: {
       secret: process.env.SESSION_CRYPTO_SECRET || 'your_crypto_secret'
     },
-    touchAfter: 24 * 3600 // Time period in seconds between session updates
+    touchAfter: 24 * 3600
   }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
@@ -64,6 +64,20 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/enrollments', require('./routes/enrollments'));
 app.use('/api/reviews', require('./routes/reviews'));
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the React app
+  const clientBuildPath = path.join(__dirname, '../../client/dist');
+  app.use(express.static(clientBuildPath));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    }
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
