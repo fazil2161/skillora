@@ -64,10 +64,11 @@ app.use(session({
   }
 }));
 
-// Basic test route
-app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' });
-});
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files
+  app.use(express.static(path.join(__dirname, '../../client/dist')));
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -78,7 +79,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/courses', require('./routes/courses'));
 app.use('/api/categories', require('./routes/categories'));
@@ -86,10 +87,8 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/enrollments', require('./routes/enrollments'));
 app.use('/api/reviews', require('./routes/reviews'));
 
-// Serve static files in production
+// Handle all other routes by serving the index.html in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../../client/dist')));
-  
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
