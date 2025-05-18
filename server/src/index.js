@@ -12,7 +12,9 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://skillora-production.up.railway.app'
+    : 'http://localhost:3000',
   credentials: true,
 }));
 app.use(express.json());
@@ -57,6 +59,22 @@ app.use(session({
   }
 }));
 
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const clientPath = path.join(__dirname, '../../client/dist');
+  console.log('Serving static files from:', clientPath);
+  app.use(express.static(clientPath));
+}
+
+// Add this after your middleware setup but before routes
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    environment: process.env.NODE_ENV,
+    staticPath: path.join(__dirname, '../../client/dist')
+  });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/courses', require('./routes/courses'));
@@ -65,17 +83,25 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/enrollments', require('./routes/enrollments'));
 app.use('/api/reviews', require('./routes/reviews'));
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React app
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
-  app.use(express.static(clientBuildPath));
+// Basic route for testing
+app.get('/test', (req, res) => {
+  res.json({ message: 'Server is running' });
+});
 
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(clientBuildPath, 'index.html'));
+// Handle React routing in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
     }
+    const indexPath = path.join(__dirname, '../../client/dist/index.html');
+    console.log('Serving index.html from:', indexPath);
+    res.sendFile(indexPath, err => {
+      if (err) {
+        console.error('Error sending index.html:', err);
+        res.status(500).send('Error loading application');
+      }
+    });
   });
 }
 
