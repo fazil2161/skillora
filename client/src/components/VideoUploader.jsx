@@ -12,8 +12,8 @@ const VideoUploader = ({ onUploadComplete, courseId, sectionId }) => {
     if (window.cloudinary) {
       const widget = window.cloudinary.createUploadWidget(
         {
-          cloudName: process.env.REACT_APP_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET,
+          cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
           sources: ['local'],
           multiple: false,
           maxFileSize: 524288000, // 500MB
