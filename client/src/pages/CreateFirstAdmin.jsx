@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../utils/axios';
 
 const CreateFirstAdmin = () => {
   const navigate = useNavigate();
@@ -28,12 +28,13 @@ const CreateFirstAdmin = () => {
     setSuccess(false);
 
     try {
-      const response = await axios.post('/api/users/create-first-admin', formData);
+      const response = await axios.post('/auth/register', formData);
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (error) {
+      console.error('Error creating admin:', error.response?.data || error.message);
       setError(error.response?.data?.message || 'Error creating admin user');
     }
   };

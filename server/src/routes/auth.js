@@ -10,5 +10,6 @@ router.post('/logout', authController.logout);
 
 // Protected routes
 router.get('/me', auth, authController.getCurrentUser);
+router.post('/promote-to-admin', authController.promoteToAdmin);
 
 module.exports = router; 

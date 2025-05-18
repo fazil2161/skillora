@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Register = () => {
+  const location = useLocation();
+  const isAdminRegistration = location.pathname === '/register/admin';
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    adminSecretKey: isAdminRegistration ? '' : undefined
   });
   const [error, setError] = useState('');
   const { register } = useAuth();
@@ -23,13 +27,22 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+
     try {
-      await register(formData);
-      navigate('/dashboard');
+      const { confirmPassword, ...registrationData } = formData;
+      const result = await register(registrationData);
+      
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.message || 'Failed to create an account. Please try again.');
+      }
     } catch (err) {
       setError('Failed to create an account. Please try again.');
     }
@@ -39,7 +52,7 @@ const Register = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-          Create your account
+          {isAdminRegistration ? 'Create Admin Account' : 'Create your account'}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-400">
           Already have an account?{' '}
@@ -151,12 +164,32 @@ const Register = () => {
               </div>
             </div>
 
+            {isAdminRegistration && (
+              <div>
+                <label htmlFor="adminSecretKey" className="block text-sm font-medium text-gray-700">
+                  Admin Secret Key
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="adminSecretKey"
+                    name="adminSecretKey"
+                    type="password"
+                    required
+                    value={formData.adminSecretKey}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors"
+                    placeholder="Enter admin secret key"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all transform hover:scale-[1.02]"
               >
-                Create account
+                {isAdminRegistration ? 'Create Admin Account' : 'Create Account'}
               </button>
             </div>
           </form>
