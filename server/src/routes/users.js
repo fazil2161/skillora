@@ -8,13 +8,10 @@ const bcrypt = require('bcryptjs');
 // Check if any admin exists
 router.get('/check-admin', async (req, res) => {
   try {
-    const adminExists = await User.exists({ isAdmin: true });
-    if (adminExists) {
-      res.status(200).json({ exists: true });
-    } else {
-      res.status(404).json({ exists: false });
-    }
+    const adminUser = await User.findOne({ isAdmin: true });
+    res.status(200).json({ exists: Boolean(adminUser) });
   } catch (error) {
+    console.error('Error checking admin existence:', error);
     res.status(500).json({ message: 'Error checking admin existence' });
   }
 });

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -37,19 +38,65 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Dashboard
-                </Link>
-                {user.isAdmin && (
+                {!user.isAdmin && (
                   <Link
-                    to="/admin"
+                    to="/dashboard"
                     className="text-gray-300 hover:text-white transition-colors"
                   >
-                    Admin
+                    Dashboard
                   </Link>
+                )}
+                {user.isAdmin && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                      className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+                    >
+                      <span>Admin</span>
+                      <svg
+                        className={`h-4 w-4 transition-transform ${isAdminMenuOpen ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {isAdminMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                        <div className="py-1" role="menu">
+                          <Link
+                            to="/admin"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            role="menuitem"
+                          >
+                            Dashboard
+                          </Link>
+                          <Link
+                            to="/admin/courses/new"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            role="menuitem"
+                          >
+                            Add New Course
+                          </Link>
+                          <Link
+                            to="/admin/categories/new"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            role="menuitem"
+                          >
+                            Add New Category
+                          </Link>
+                          <Link
+                            to="/admin/users"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            role="menuitem"
+                          >
+                            Manage Users
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <button
                   onClick={handleLogout}

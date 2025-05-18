@@ -1,0 +1,142 @@
+.courses-page {
+  min-height: 100vh;
+  background: #fafafa;
+  padding: 2rem 5%;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.page-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.filters-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.filter-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.filter-controls select {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-controls select:hover {
+  border-color: #d1d5db;
+}
+
+.filter-controls select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.no-results {
+  text-align: center;
+  padding: 4rem 0;
+  color: #666;
+}
+
+.no-results h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Custom media queries */
+@media (max-width: 768px) {
+  .courses-page {
+    padding: 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .filters-section {
+    padding: 1rem;
+  }
+
+  .filter-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .courses-page {
+    background: #121212;
+  }
+
+  .page-header h1 {
+    color: #fff;
+  }
+
+  .page-header p {
+    color: #aaa;
+  }
+
+  .filters-section {
+    background: #1e1e1e;
+  }
+
+  .search-input,
+  .filter-controls select {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #fff;
+  }
+
+  .search-input:focus,
+  .filter-controls select:focus {
+    border-color: #3b82f6;
+  }
+
+  .no-results {
+    color: #aaa;
+  }
+} 

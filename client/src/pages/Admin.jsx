@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import axios from '../utils/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const Admin = () => {
@@ -12,9 +12,7 @@ const Admin = () => {
   const { data: courses, isLoading: coursesLoading } = useQuery({
     queryKey: ['adminCourses'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:5000/api/courses/admin', {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.get('/courses/admin');
       return response.data;
     },
     enabled: activeTab === 'courses',
@@ -23,7 +21,7 @@ const Admin = () => {
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:5000/api/categories');
+      const response = await axios.get('/categories');
       return response.data;
     },
     enabled: activeTab === 'categories',
@@ -32,9 +30,7 @@ const Admin = () => {
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['adminUsers'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:5000/api/users/admin', {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.get('/users/admin');
       return response.data;
     },
     enabled: activeTab === 'users',
@@ -43,9 +39,7 @@ const Admin = () => {
   // Mutations
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId) => {
-      await axios.delete(`http://localhost:5000/api/categories/${categoryId}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      await axios.delete(`/categories/${categoryId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
@@ -54,11 +48,7 @@ const Admin = () => {
 
   const toggleUserStatusMutation = useMutation({
     mutationFn: async ({ userId, isActive }) => {
-      await axios.patch(
-        `http://localhost:5000/api/users/${userId}/status`,
-        { isActive },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
+      await axios.patch(`/users/${userId}/status`, { isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['adminUsers']);
@@ -68,9 +58,7 @@ const Admin = () => {
   const deleteCourse = async (courseId) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/courses/${courseId}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
+        await axios.delete(`/courses/${courseId}`);
         queryClient.invalidateQueries(['adminCourses']);
       } catch (error) {
         console.error('Error deleting course:', error);

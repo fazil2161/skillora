@@ -7,29 +7,23 @@ const authController = {
     try {
       const { username, email, password, firstName, lastName, adminSecretKey } = req.body;
 
-      console.log('Registration attempt:', { email, firstName, lastName, isAdminAttempt: !!adminSecretKey });
-
       // Check if user already exists
       const existingUser = await User.findOne({ $or: [{ email }, { username }] });
       if (existingUser) {
-        console.log('Registration failed: User already exists');
         return res.status(400).json({ message: 'User already exists' });
       }
 
       // Check if this is an admin registration
       let isAdmin = false;
       if (adminSecretKey) {
-        console.log('Admin registration attempt');
         if (!process.env.ADMIN_SECRET_KEY) {
           console.error('ADMIN_SECRET_KEY not found in environment variables');
           return res.status(500).json({ message: 'Server configuration error' });
         }
         
         if (adminSecretKey !== process.env.ADMIN_SECRET_KEY) {
-          console.log('Admin registration failed: Invalid secret key');
           return res.status(403).json({ message: 'Invalid admin secret key' });
         }
-        console.log('Admin secret key verified');
         isAdmin = true;
       }
 
@@ -44,15 +38,15 @@ const authController = {
       });
 
       await user.save();
-      console.log('User created successfully:', { userId: user._id, isAdmin });
 
       // Generate JWT token
       const token = jwt.sign(
         { userId: user._id },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '24h' }
       );
 
+      // Return user data without sensitive information
       res.status(201).json({
         message: 'User registered successfully',
         token,
@@ -63,15 +57,11 @@ const authController = {
           firstName: user.firstName,
           lastName: user.lastName,
           isAdmin: user.isAdmin,
-          isInstructor: user.isInstructor,
         },
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ 
-        message: 'Error registering user', 
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+      res.status(500).json({ message: 'Error registering user', error: error.message });
     }
   },
 
@@ -86,6 +76,15 @@ const authController = {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      // Log the user object from database
+      console.log('User found in database:', {
+        id: user._id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+
       // Validate password
       const isValidPassword = await user.validatePassword(password);
       if (!isValidPassword) {
@@ -99,7 +98,8 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-      res.json({
+      // Create response object
+      const responseObj = {
         message: 'Login successful',
         token,
         user: {
@@ -108,11 +108,16 @@ const authController = {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          isAdmin: user.isAdmin,
-          isInstructor: user.isInstructor,
+          isAdmin: Boolean(user.isAdmin), // Ensure proper boolean conversion
         },
-      });
+      };
+
+      // Log the response being sent
+      console.log('Sending login response:', responseObj);
+
+      res.json(responseObj);
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: 'Error logging in', error: error.message });
     }
   },
@@ -124,9 +129,18 @@ const authController = {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      res.json(user);
+      console.log('Sending user data:', user); // Debug log
+      res.json({
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: Boolean(user.isAdmin), // Ensure boolean conversion
+      });
     } catch (error) {
-      res.status(500).json({ message: 'Error fetching user', error: error.message });
+      console.error('Error fetching current user:', error);
+      res.status(500).json({ message: 'Error fetching user data' });
     }
   },
 
@@ -143,12 +157,7 @@ const authController = {
   // Promote user to admin
   async promoteToAdmin(req, res) {
     try {
-      const { userId, adminSecretKey } = req.body;
-
-      // Verify admin secret key
-      if (!adminSecretKey || adminSecretKey !== process.env.ADMIN_SECRET_KEY) {
-        return res.status(403).json({ message: 'Invalid admin secret key' });
-      }
+      const { userId } = req.body;
 
       // Find and update user
       const user = await User.findById(userId);
@@ -168,15 +177,11 @@ const authController = {
           firstName: user.firstName,
           lastName: user.lastName,
           isAdmin: user.isAdmin,
-          isInstructor: user.isInstructor,
         },
       });
     } catch (error) {
       console.error('Error promoting user to admin:', error);
-      res.status(500).json({ 
-        message: 'Error promoting user to admin',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+      res.status(500).json({ message: 'Error promoting user to admin' });
     }
   },
 };

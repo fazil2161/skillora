@@ -4,15 +4,10 @@ const cors = require('cors');
 const session = require('express-session');
 const mongoose = require('mongoose');
 const path = require('path');
+const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Database configuration
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
 
 // Middleware
 app.use(cors({
@@ -47,18 +42,52 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Database connection and server start
-async function startServer() {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
+// Connect to MongoDB and start server
+if (!process.env.MONGODB_URI) {
+  console.error('MONGODB_URI is not defined in .env file');
+  process.exit(1);
+}
+
+console.log('Attempting to connect to MongoDB at:', process.env.MONGODB_URI);
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(async () => {
     console.log('Database connection established successfully.');
     
+    // Check if admin exists, if not create one
+    try {
+      const adminExists = await User.findOne({ email: 'fazilmohammed377@gmail.com' });
+      console.log('Checking for admin:', adminExists);
+      
+      if (!adminExists) {
+        console.log('No admin found, creating default admin...');
+        const adminUser = new User({
+          username: 'fazil',
+          email: 'fazilmohammed377@gmail.com',
+          password: 'admin123', // This will be hashed by the pre-save hook
+          firstName: 'Fazil',
+          lastName: 'Mohammed',
+          isAdmin: true
+        });
+        
+        await adminUser.save();
+        console.log('Default admin created successfully');
+      } else if (!adminExists.isAdmin) {
+        // If user exists but is not admin, make them admin
+        adminExists.isAdmin = true;
+        await adminExists.save();
+        console.log('Existing user promoted to admin');
+      }
+    } catch (error) {
+      console.error('Error checking/creating admin:', error);
+    }
+
+    // Start the server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
-}
-
-startServer(); 
+  })
+  .catch((error) => {
+    console.error('Database connection error:', error);
+    process.exit(1);
+  }); 

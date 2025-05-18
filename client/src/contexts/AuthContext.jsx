@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../utils/axios';
 
 const AuthContext = createContext(null);
 
-// Separate the hook into a named function declaration
-function useAuth() {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -12,8 +11,7 @@ function useAuth() {
   return context;
 }
 
-// Export the provider as a named function component
-function AuthProvider({ children }) {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,11 +27,19 @@ function AuthProvider({ children }) {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/me');
-      setUser({ ...response.data, token: localStorage.getItem('token') });
+      const response = await axios.get('/auth/me');
+      const userData = response.data;
+      console.log('Fetched user data:', userData); // Debug log
+      setUser({
+        ...userData,
+        token: localStorage.getItem('token'),
+        isAdmin: Boolean(userData.isAdmin) // Ensure boolean conversion
+      });
     } catch (error) {
+      console.error('Error fetching user:', error);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -41,16 +47,22 @@ function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('/auth/login', {
         email,
         password,
       });
       const { token, user: userData } = response.data;
+      console.log('Login response:', userData); // Debug log
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser({ ...userData, token });
+      setUser({
+        ...userData,
+        token,
+        isAdmin: Boolean(userData.isAdmin) // Ensure boolean conversion
+      });
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed',
@@ -60,14 +72,15 @@ function AuthProvider({ children }) {
 
   const register = async (userData) => {
     try {
-      console.log('Registering with data:', userData); // Debug log
-      const response = await axios.post('http://localhost:5000/api/auth/register', userData);
-      console.log('Registration response:', response.data); // Debug log
-      
+      const response = await axios.post('/auth/register', userData);
       const { token, user: newUser } = response.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser({ ...newUser, token });
+      setUser({
+        ...newUser,
+        token,
+        isAdmin: newUser.isAdmin || false
+      });
       return { success: true };
     } catch (error) {
       console.error('Registration error:', error.response?.data || error.message);
@@ -97,7 +110,4 @@ function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-}
-
-// Export both as named exports
-export { AuthProvider, useAuth }; 
+} 

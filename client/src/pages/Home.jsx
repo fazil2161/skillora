@@ -1,8 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import axios from '../utils/axios';
 import { FaLaptopCode, FaBusinessTime, FaPalette, FaChartLine, FaBook, FaSearch, FaCreditCard, FaCertificate, FaWhatsapp, FaLinkedin, FaTwitter } from 'react-icons/fa';
+
+// Import course images
+import webDevImage from '../assets/webdev.png';
+import dataScienceImage from '../assets/data science.jpg';
+import uiDesignImage from '../assets/ui design.avif';
 
 const Home = () => {
   // Add check for existing admin
@@ -10,12 +15,33 @@ const Home = () => {
     queryKey: ['adminExists'],
     queryFn: async () => {
       try {
-        const response = await axios.get('/api/users/admin/exists');
+        const response = await axios.get('/users/check-admin');
         return response.data.exists;
       } catch (error) {
-        return false;
+        console.error('Error checking admin existence:', error);
+        return true;
       }
-    }
+    },
+    initialData: true,
+    staleTime: 30000,
+  });
+
+  const showCreateAdminButton = adminExists === false;
+
+  const { data: featuredCourses, isLoading: coursesLoading } = useQuery({
+    queryKey: ['featuredCourses'],
+    queryFn: async () => {
+      const response = await axios.get('/courses/featured');
+      return response.data;
+    },
+  });
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await axios.get('/categories');
+      return response.data;
+    },
   });
 
   // Sample courses data while API is not available
@@ -23,7 +49,7 @@ const Home = () => {
     {
       _id: '1',
       title: 'Complete Web Development Bootcamp',
-      thumbnailUrl: 'https://placehold.co/600x400/2563eb/FFFFFF/png?text=Web+Development',
+      thumbnailUrl: webDevImage,
       instructorId: { firstName: 'John', lastName: 'Doe' },
       price: 9900,
       level: 'Intermediate'
@@ -31,7 +57,7 @@ const Home = () => {
     {
       _id: '2',
       title: 'Data Science Fundamentals',
-      thumbnailUrl: 'https://placehold.co/600x400/2563eb/FFFFFF/png?text=Data+Science',
+      thumbnailUrl: dataScienceImage,
       instructorId: { firstName: 'Sarah', lastName: 'Smith' },
       price: 8900,
       level: 'Beginner'
@@ -39,7 +65,7 @@ const Home = () => {
     {
       _id: '3',
       title: 'UI/UX Design Masterclass',
-      thumbnailUrl: 'https://placehold.co/600x400/2563eb/FFFFFF/png?text=UI+Design',
+      thumbnailUrl: uiDesignImage,
       instructorId: { firstName: 'Mike', lastName: 'Johnson' },
       price: 7900,
       level: 'Advanced'
@@ -56,8 +82,8 @@ const Home = () => {
 
   return (
     <div className="space-y-16">
-      {/* Show admin creation button if no admin exists */}
-      {adminExists === false && (
+      {/* Only show admin creation button if explicitly no admin exists */}
+      {showCreateAdminButton && (
         <div className="bg-white shadow-sm border-b">
           <div className="container mx-auto px-4 py-3">
             <div className="flex justify-between items-center">
@@ -92,35 +118,49 @@ const Home = () => {
       {/* Featured Courses */}
       <section className="container mx-auto px-4">
         <h2 className="text-3xl font-bold mb-8 text-gray-900">Featured Courses</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {sampleCourses.map((course) => (
-            <Link
-              key={course._id}
-              to={`/courses/${course._id}`}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 border border-gray-100"
-            >
-              <img
-                src={course.thumbnailUrl}
-                alt={course.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="font-semibold text-lg mb-2 text-gray-900">{course.title}</h3>
-                <p className="text-gray-600 mb-4">
-                  By {course.instructorId.firstName} {course.instructorId.lastName}
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-900 font-bold text-lg">
-                    ${(course.price / 100).toFixed(2)}
-                  </span>
-                  <span className="text-gray-600 text-sm px-3 py-1 bg-gray-100 rounded-full">
-                    {course.level}
-                  </span>
+        {coursesLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="animate-pulse">
+                <div className="bg-gray-200 h-48 rounded-t-lg"></div>
+                <div className="p-4 border border-gray-200 rounded-b-lg">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {(featuredCourses?.length > 0 ? featuredCourses : sampleCourses)?.map((course) => (
+              <Link
+                key={course._id}
+                to={`/courses/${course._id}`}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
+              >
+                <img
+                  src={course.thumbnailUrl}
+                  alt={course.title}
+                  className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                />
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{course.title}</h3>
+                  <p className="text-gray-600">
+                    By {course.instructorId.firstName} {course.instructorId.lastName}
+                  </p>
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className="text-blue-600 font-semibold">
+                      ${(course.price / 100).toFixed(2)}
+                    </span>
+                    <span className="text-gray-500 text-sm">
+                      {course.level}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* How It Works */}
@@ -162,18 +202,30 @@ const Home = () => {
       {/* Categories */}
       <section className="container mx-auto px-4 pb-16">
         <h2 className="text-3xl font-bold mb-8 text-gray-900">Browse Categories</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {sampleCategories.map((category) => (
-            <Link
-              key={category._id}
-              to={`/courses?category=${category._id}`}
-              className={`${category.colorClass} rounded-xl p-8 text-center hover:opacity-90 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl`}
-            >
-              {category.icon}
-              <h3 className="font-semibold text-lg">{category.name}</h3>
-            </Link>
-          ))}
-        </div>
+        {categoriesLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="animate-pulse">
+                <div className="h-24 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {(categories?.length > 0 ? categories : sampleCategories)?.map((category) => (
+              <Link
+                key={category._id}
+                to={`/courses?category=${category._id}`}
+                className={`p-6 rounded-lg text-center hover:opacity-90 transition ${
+                  category.colorClass || 'bg-blue-500'
+                } text-white`}
+              >
+                {category.icon}
+                <h3 className="font-semibold text-lg">{category.name}</h3>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Footer */}

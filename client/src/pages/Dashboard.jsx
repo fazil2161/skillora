@@ -1,21 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import axios from '../utils/axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log('Current user state:', user); // Debug log
+    // Check if user exists and is admin
+    if (user?.isAdmin) {
+      console.log('Admin user detected, redirecting to /admin'); // Debug log
+      navigate('/admin', { replace: true });
+      return;
+    }
+  }, [user, navigate]);
 
   const { data: enrollments, isLoading } = useQuery({
     queryKey: ['userEnrollments'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:5000/api/enrollments', {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.get('/enrollments');
       return response.data;
     },
-    enabled: !!user,
+    enabled: !!user && !user.isAdmin,
   });
 
   if (isLoading) {
