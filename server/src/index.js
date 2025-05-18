@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://skillora.onrender.com', 'https://skillora-api.onrender.com']
+    ? process.env.RENDER_EXTERNAL_URL
     : 'http://localhost:3000',
   credentials: true,
 }));
