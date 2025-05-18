@@ -8,28 +8,30 @@ const path = require('path');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://skillora-production.up.railway.app'
-    : 'http://localhost:3000',
+  origin: ['https://skillora-production.up.railway.app', 'http://localhost:3000'],
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Log incoming requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 // MongoDB Connection URI
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://delta-student:Fazz2161@cluster0.cutf4.mongodb.net/skillora?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // Connect to MongoDB
 async function connectDB() {
   try {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(MONGODB_URI);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -39,7 +41,7 @@ async function connectDB() {
 
 // Session configuration with MongoStore
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_session_secret_key',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
@@ -48,30 +50,29 @@ app.use(session({
     ttl: 24 * 60 * 60,
     autoRemove: 'native',
     crypto: {
-      secret: process.env.SESSION_CRYPTO_SECRET || 'your_crypto_secret'
+      secret: process.env.SESSION_SECRET
     },
     touchAfter: 24 * 3600
   }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 }));
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(__dirname, '../../client/dist');
-  console.log('Serving static files from:', clientPath);
-  app.use(express.static(clientPath));
-}
+// Basic test route
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running' });
+});
 
-// Add this after your middleware setup but before routes
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     environment: process.env.NODE_ENV,
-    staticPath: path.join(__dirname, '../../client/dist')
+    port: PORT
   });
 });
 
@@ -83,18 +84,17 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/enrollments', require('./routes/enrollments'));
 app.use('/api/reviews', require('./routes/reviews'));
 
-// Basic route for testing
-app.get('/test', (req, res) => {
-  res.json({ message: 'Server is running' });
-});
-
-// Handle React routing in production
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
+  const clientPath = path.join(__dirname, '../../client/dist');
+  console.log('Static files path:', clientPath);
+  app.use(express.static(clientPath));
+  
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
-    const indexPath = path.join(__dirname, '../../client/dist/index.html');
+    const indexPath = path.join(clientPath, 'index.html');
     console.log('Serving index.html from:', indexPath);
     res.sendFile(indexPath, err => {
       if (err) {
@@ -107,7 +107,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
@@ -131,32 +131,16 @@ async function startServer() {
       });
       await adminUser.save();
       console.log('Default admin created successfully');
-    } else if (!adminExists.isAdmin) {
-      adminExists.isAdmin = true;
-      await adminExists.save();
-      console.log('Existing user promoted to admin');
     }
 
-    // Start the server
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
+      console.log('Environment:', process.env.NODE_ENV);
     });
   } catch (error) {
     console.error('Server initialization error:', error);
     process.exit(1);
   }
 }
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
-  process.exit(1);
-});
 
 startServer(); 
