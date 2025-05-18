@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 const path = require('path');
 const User = require('./models/User');
@@ -17,15 +18,43 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// MongoDB Connection URI
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://delta-student:Fazz2161@cluster0.cutf4.mongodb.net/skillora?retryWrites=true&w=majority&appName=Cluster0';
+
+// Connect to MongoDB
+async function connectDB() {
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+}
+
+// Session configuration with MongoStore
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || 'your_session_secret_key',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGODB_URI,
+    collectionName: 'sessions', // Custom collection name for sessions
+    ttl: 24 * 60 * 60, // Session TTL (1 day)
+    autoRemove: 'native', // Enable automatic removal of expired sessions
+    crypto: {
+      secret: process.env.SESSION_CRYPTO_SECRET || 'your_crypto_secret'
+    },
+    touchAfter: 24 * 3600 // Time period in seconds between session updates
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  },
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
 }));
 
 // Routes
@@ -42,52 +71,52 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Connect to MongoDB and start server
-if (!process.env.MONGODB_URI) {
-  console.error('MONGODB_URI is not defined in .env file');
-  process.exit(1);
-}
-
-console.log('Attempting to connect to MongoDB at:', process.env.MONGODB_URI);
-
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log('Database connection established successfully.');
+// Initialize database and start server
+async function startServer() {
+  try {
+    await connectDB();
     
-    // Check if admin exists, if not create one
-    try {
-      const adminExists = await User.findOne({ email: 'fazilmohammed377@gmail.com' });
-      console.log('Checking for admin:', adminExists);
-      
-      if (!adminExists) {
-        console.log('No admin found, creating default admin...');
-        const adminUser = new User({
-          username: 'fazil',
-          email: 'fazilmohammed377@gmail.com',
-          password: 'admin123', // This will be hashed by the pre-save hook
-          firstName: 'Fazil',
-          lastName: 'Mohammed',
-          isAdmin: true
-        });
-        
-        await adminUser.save();
-        console.log('Default admin created successfully');
-      } else if (!adminExists.isAdmin) {
-        // If user exists but is not admin, make them admin
-        adminExists.isAdmin = true;
-        await adminExists.save();
-        console.log('Existing user promoted to admin');
-      }
-    } catch (error) {
-      console.error('Error checking/creating admin:', error);
+    // Check/Create admin user
+    const adminExists = await User.findOne({ email: 'fazilmohammed377@gmail.com' });
+    
+    if (!adminExists) {
+      console.log('Creating default admin user...');
+      const adminUser = new User({
+        username: 'fazil',
+        email: 'fazilmohammed377@gmail.com',
+        password: 'admin123',
+        firstName: 'Fazil',
+        lastName: 'Mohammed',
+        isAdmin: true
+      });
+      await adminUser.save();
+      console.log('Default admin created successfully');
+    } else if (!adminExists.isAdmin) {
+      adminExists.isAdmin = true;
+      await adminExists.save();
+      console.log('Existing user promoted to admin');
     }
 
     // Start the server
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.error('Database connection error:', error);
+  } catch (error) {
+    console.error('Server initialization error:', error);
     process.exit(1);
-  }); 
+  }
+}
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
+  process.exit(1);
+});
+
+startServer(); 

@@ -64,7 +64,54 @@ const Courses = () => {
       rating: 4.7,
       studentsEnrolled: 1200
     },
-    // ... other courses with similar structure
+    {
+      _id: '3',
+      title: 'Business Strategy & Management',
+      description: 'Learn essential business strategies, management techniques, and leadership skills for the modern workplace.',
+      thumbnailUrl: businessStrategy,
+      instructorId: { firstName: 'Michael', lastName: 'Johnson' },
+      price: 7900,
+      level: 'Advanced',
+      category: '2',
+      rating: 4.9,
+      studentsEnrolled: 980
+    },
+    {
+      _id: '4',
+      title: 'UI/UX Design Masterclass',
+      description: 'Master the art of user interface and user experience design with modern tools and methodologies.',
+      thumbnailUrl: uiuxDesign,
+      instructorId: { firstName: 'Emma', lastName: 'Wilson' },
+      price: 8500,
+      level: 'Intermediate',
+      category: '3',
+      rating: 4.6,
+      studentsEnrolled: 750
+    },
+    {
+      _id: '5',
+      title: 'Digital Marketing Essentials',
+      description: 'Learn comprehensive digital marketing strategies including SEO, social media, and content marketing.',
+      thumbnailUrl: digitalMarketing,
+      instructorId: { firstName: 'David', lastName: 'Brown' },
+      price: 6900,
+      level: 'Beginner',
+      category: '4',
+      rating: 4.5,
+      studentsEnrolled: 1100
+    },
+    {
+      _id: '6',
+      title: 'Mobile App Development',
+      description: 'Build iOS and Android applications using React Native and modern mobile development practices.',
+      thumbnailUrl: mobileAppDev,
+      instructorId: { firstName: 'Lisa', lastName: 'Anderson' },
+      price: 9500,
+      level: 'Advanced',
+      category: '1',
+      rating: 4.7,
+      studentsEnrolled: 850
+    }
   ];
 
   const filterCourses = () => {
