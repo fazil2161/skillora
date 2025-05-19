@@ -11,12 +11,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.RENDER_EXTERNAL_URL
-    : 'http://localhost:3000',
-  credentials: true,
-}));
+// In production, CORS isn't needed since we're serving frontend from the same origin
+if (process.env.NODE_ENV === 'development') {
+  app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  }));
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
