@@ -23,9 +23,18 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html')
       }
-    }
+    },
+    cssCodeSplit: true
   },
   optimizeDeps: {
     include: ['react', 'react-dom']
+  },
+  css: {
+    postcss: {
+      plugins: [
+        require('tailwindcss'),
+        require('autoprefixer'),
+      ],
+    }
   }
 }); 
